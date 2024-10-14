@@ -36,17 +36,17 @@ fi
 
 SIM_PKG_URL=''
 if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
-    SIM_PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/d2dtracker_sim.git
+    SIM_PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/SMART-TRACK.git
 else
-    SIM_PKG_URL=https://github.com/mzahana/d2dtracker_sim.git
+    SIM_PKG_URL=https://github.com/mzahana/SMART-TRACK.git
 fi
 
 # Clone the d2dtracker_sim if it doesn't exist
-if [ ! -d "$ROS2_SRC/d2dtracker_sim" ]; then
+if [ ! -d "$ROS2_SRC/smart_track" ]; then
     cd $ROS2_SRC
-    git clone $SIM_PKG_URL
+    git clone $SIM_PKG_URL smart_track && cd $ROS2_SRC/smart_track && git pull origin smart_track_dev
 else
-    cd $ROS2_SRC/d2dtracker_sim && git pull origin main
+    cd $ROS2_SRC/smart_track && git pull origin smart_track_dev
 fi
 
 # Clone and build PX4-Autopilot if it doesn't exist
@@ -77,9 +77,9 @@ cd $PX4_DIR && make px4_sitl
 # Copy files to $PX4_DIR
 echo && echo  "Copying files to ${PX4_DIR}" && echo
 sleep 1
-cp -r ${ROS2_SRC}/d2dtracker_sim/models/* ${PX4_DIR}/Tools/simulation/gz/models/
-cp -r ${ROS2_SRC}/d2dtracker_sim/worlds/* ${PX4_DIR}/Tools/simulation/gz/worlds/
-cp -r ${ROS2_SRC}/d2dtracker_sim//config/px4/* ${PX4_DIR}/ROMFS/px4fmu_common/init.d-posix/airframes/
+cp -r ${ROS2_SRC}/smart_track/models/* ${PX4_DIR}/Tools/simulation/gz/models/
+cp -r ${ROS2_SRC}/smart_track/worlds/* ${PX4_DIR}/Tools/simulation/gz/worlds/
+cp -r ${ROS2_SRC}/smart_track//config/px4/* ${PX4_DIR}/ROMFS/px4fmu_common/init.d-posix/airframes/
 cd $PX4_DIR && make px4_sitl
 
 # Clone some PX4 rose-related packages
@@ -117,20 +117,20 @@ cd $PX4_DIR && make px4_sitl
 #
 # d2dtracker_drone_detector
 #
-PKG_URL=''
-if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
-    PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/d2dtracker_drone_detector.git
-else
-    PKG_URL=https://github.com/mzahana/d2dtracker_drone_detector.git
-fi
+# PKG_URL=''
+# if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
+#     PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/d2dtracker_drone_detector.git
+# else
+#     PKG_URL=https://github.com/mzahana/d2dtracker_drone_detector.git
+# fi
 
-if [ ! -d "$ROS2_SRC/d2dtracker_drone_detector" ]; then
-    cd $ROS2_SRC
-    git clone ${PKG_URL}
-    cd $ROS2_SRC/d2dtracker_drone_detector && git checkout ros2_humble && git pull origin ros2_humble
-else
-    cd $ROS2_SRC/d2dtracker_drone_detector && git checkout ros2_humble && git pull origin ros2_humble
-fi
+# if [ ! -d "$ROS2_SRC/d2dtracker_drone_detector" ]; then
+#     cd $ROS2_SRC
+#     git clone ${PKG_URL}
+#     cd $ROS2_SRC/d2dtracker_drone_detector && git checkout ros2_humble && git pull origin ros2_humble
+# else
+#     cd $ROS2_SRC/d2dtracker_drone_detector && git checkout ros2_humble && git pull origin ros2_humble
+# fi
 
 
 #
@@ -153,82 +153,82 @@ fi
 #
 # custom_trajectory_msgs
 #
-PKG_URL=''
-if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
-    PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/custom_trajectory_msgs.git
-else
-    PKG_URL=https://github.com/mzahana/custom_trajectory_msgs.git
-fi
+# PKG_URL=''
+# if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
+#     PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/custom_trajectory_msgs.git
+# else
+#     PKG_URL=https://github.com/mzahana/custom_trajectory_msgs.git
+# fi
 
-if [ ! -d "$ROS2_SRC/custom_trajectory_msgs" ]; then
-    cd $ROS2_SRC
-    git clone ${PKG_URL} -b ros2_humble
-else
-    cd $ROS2_SRC/custom_trajectory_msgs && git checkout ros2_humble && git pull origin ros2_humble
-fi
+# if [ ! -d "$ROS2_SRC/custom_trajectory_msgs" ]; then
+#     cd $ROS2_SRC
+#     git clone ${PKG_URL} -b ros2_humble
+# else
+#     cd $ROS2_SRC/custom_trajectory_msgs && git checkout ros2_humble && git pull origin ros2_humble
+# fi
 
 #
 # trajectory_prediction
 # Constant celocity and Bezier based trajectory prediction
 #
-PKG_URL=''
-if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
-    echo "GIT_USER=$GIT_USER , GIT_TOKEN=$GIT_TOKEN"
-    PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/trajectory_prediction.git
-else
-    echo "GIT_USER and GIT_TOKEN are not set"
-    PKG_URL=https://github.com/mzahana/trajectory_prediction.git
-fi
+# PKG_URL=''
+# if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
+#     echo "GIT_USER=$GIT_USER , GIT_TOKEN=$GIT_TOKEN"
+#     PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/trajectory_prediction.git
+# else
+#     echo "GIT_USER and GIT_TOKEN are not set"
+#     PKG_URL=https://github.com/mzahana/trajectory_prediction.git
+# fi
 
-if [ ! -d "$ROS2_SRC/trajectory_prediction" ]; then
-    cd $ROS2_SRC
-    git clone ${PKG_URL} -b ros2_humble
-else
-    cd $ROS2_SRC/trajectory_prediction && git checkout ros2_humble && git pull origin ros2_humble
-fi
-cd $ROS2_SRC/trajectory_prediction && . setup.sh
+# if [ ! -d "$ROS2_SRC/trajectory_prediction" ]; then
+#     cd $ROS2_SRC
+#     git clone ${PKG_URL} -b ros2_humble
+# else
+#     cd $ROS2_SRC/trajectory_prediction && git checkout ros2_humble && git pull origin ros2_humble
+# fi
+# cd $ROS2_SRC/trajectory_prediction && . setup.sh
 
 #
 # drone_path_predictor_ros
 # GRU-based trajectory prediction
 # This is better than trajectory_prediction
 #
-PKG_URL=''
-if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
-    echo "GIT_USER=$GIT_USER , GIT_TOKEN=$GIT_TOKEN"
-    PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/drone_path_predictor_ros.git
-else
-    echo "GIT_USER and GIT_TOKEN are not set"
-    PKG_URL=https://github.com/mzahana/drone_path_predictor_ros.git
-fi
+# PKG_URL=''
+# if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
+#     echo "GIT_USER=$GIT_USER , GIT_TOKEN=$GIT_TOKEN"
+#     PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/drone_path_predictor_ros.git
+# else
+#     echo "GIT_USER and GIT_TOKEN are not set"
+#     PKG_URL=https://github.com/mzahana/drone_path_predictor_ros.git
+# fi
 
-if [ ! -d "$ROS2_SRC/drone_path_predictor_ros" ]; then
-    cd $ROS2_SRC
-    git clone ${PKG_URL} -b ros2_humble
-else
-    cd $ROS2_SRC/drone_path_predictor_ros && git checkout ros2_humble && git pull origin ros2_humble
-fi
+# if [ ! -d "$ROS2_SRC/drone_path_predictor_ros" ]; then
+#     cd $ROS2_SRC
+#     git clone ${PKG_URL} -b ros2_humble
+# else
+#     cd $ROS2_SRC/drone_path_predictor_ros && git checkout ros2_humble && git pull origin ros2_humble
+# fi
 
 #
 # trajectory_generation
 # MPC-based trajectory generation
 #
-PKG_URL=''
-if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
-    echo "GIT_USER=$GIT_USER , GIT_TOKEN=$GIT_TOKEN"
-    PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/trajectory_generation.git
-else
-    echo "GIT_USER and GIT_TOKEN are not set"
-    PKG_URL=https://github.com/mzahana/trajectory_generation.git
-fi
+# PKG_URL=''
+# if [[ -n "$GIT_USER" ]] && [[ -n "$GIT_TOKEN" ]]; then
+#     echo "GIT_USER=$GIT_USER , GIT_TOKEN=$GIT_TOKEN"
+#     PKG_URL=https://$GIT_USER:$GIT_TOKEN@github.com/mzahana/trajectory_generation.git
+# else
+#     echo "GIT_USER and GIT_TOKEN are not set"
+#     PKG_URL=https://github.com/mzahana/trajectory_generation.git
+# fi
 
-if [ ! -d "$ROS2_SRC/trajectory_generation" ]; then
-    cd $ROS2_SRC
-    git clone ${PKG_URL} -b ros2_humble
-else
-    cd $ROS2_SRC/trajectory_generation && git checkout ros2_humble && git pull origin ros2_humble
-fi
-cd $ROS2_SRC/trajectory_generation && . setup.sh
+# if [ ! -d "$ROS2_SRC/trajectory_generation" ]; then
+#     cd $ROS2_SRC
+#     git clone ${PKG_URL} -b ros2_humble
+# else
+#     cd $ROS2_SRC/trajectory_generation && git checkout ros2_humble && git pull origin ros2_humble
+# fi
+# cd $ROS2_SRC/trajectory_generation && . setup.sh
 
 #
 # custom mav_controllers_ros
@@ -290,5 +290,5 @@ cd $ROS2_WS && MAKEFLAGS='j1 -l1' colcon build --packages-up-to mavros_extras --
 cd $ROS2_WS && colcon build
 
 echo "DONE. Pkgs are built. Models and airframe config files are copied to the respective folder in the ${PX4_DIR} directory"
-echo "Source the ros2_ws and use <ros2 launch d2dtracker_sim interceptor.launch.py> to run the simulation"
+echo "Source the ros2_ws and use <ros2 launch smart_track observer.launch.py> to run the simulation"
 cd $HOME

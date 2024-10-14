@@ -3,7 +3,7 @@
     debug: False
     show_debug_images: False
     publish_processed_images: True
-    reference_frame: interceptor/local_pose_ENU
+    reference_frame: observer/local_pose_ENU
     area_bounds: [300, 10000]
     circular_bounds: [0.4, 0.99]
     convexity_bounds: [0.7, 1.0]

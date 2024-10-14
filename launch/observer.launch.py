@@ -15,19 +15,19 @@ def generate_launch_description():
     ns='observer'
 
     # Node for Drone 1
-    # world = {'gz_world': 'default'}
-    world = {'gz_world': 'ihunter_world'}
+    world = {'gz_world': 'default'}
+    # world = {'gz_world': 'ihunter_world'}
     model_name = {'gz_model_name': 'x500_d435'}
     autostart_id = {'px4_autostart_id': '4020'}
     instance_id = {'instance_id': '1'}
     # for 'default' world
-    # xpos = {'xpos': '0.0'}
-    # ypos = {'ypos': '0.0'}
-    # zpos = {'zpos': '0.1'}
+    xpos = {'xpos': '0.0'}
+    ypos = {'ypos': '0.0'}
+    zpos = {'zpos': '0.1'}
     # For 'ihunter_world'
-    xpos = {'xpos': '-24.0'}
-    ypos = {'ypos': '8.0'}
-    zpos = {'zpos': '1.0'}
+    # xpos = {'xpos': '-24.0'}
+    # ypos = {'ypos': '8.0'}
+    # zpos = {'zpos': '1.0'}
     headless= {'headless' : '0'}
 
     # PX4 SITL + Spawn x500_d435
@@ -149,7 +149,7 @@ def generate_launch_description():
             ])
         ]),
         launch_arguments={
-            'model': '/home/khaled/ros2_ws/src/smart_track/config/drone_detection_v3.pt',
+            'model': '/home/user/shared_volume/ros2_ws/src/smart_track/config/drone_detection_v3.pt',
             'threshold' : '0.5',
             'input_image_topic' : '/observer/image',
             'device': 'cuda:0'

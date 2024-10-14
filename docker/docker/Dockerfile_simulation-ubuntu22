@@ -1,0 +1,168 @@
+#
+# PX4 Gazebo garden development environment in Ubuntu 22.04 jammy
+#
+
+FROM osrf/ros:humble-desktop-full
+LABEL maintainer="Mohamed Abdelkader <mohamedashraf123@gmail.com>"
+
+#
+# Setup XRCE-DDS Agent & Client
+#
+RUN git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git && \
+    cd Micro-XRCE-DDS-Agent && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make && \
+    sudo make install && \
+    sudo ldconfig /usr/local/lib/
+
+RUN apt-get update && apt-get -y --quiet --no-install-recommends install \
+		bzip2 \
+		ca-certificates \
+		ccache \
+		cmake \
+		cppcheck \
+		curl \
+		dirmngr \
+		doxygen \
+		file \
+		g++ \
+		gcc \
+		gdb \
+		git \
+		gnupg \
+		gosu \
+		lcov \
+		libfreetype6-dev \
+		libgtest-dev \
+		libpng-dev \
+		libssl-dev \
+		lsb-release \
+		make \
+		openssh-client \
+		pkg-config \
+		python3-dev \
+		python3-pip \
+		rsync \
+		shellcheck \
+		tzdata \
+		unzip \
+		valgrind \
+		wget \
+		xsltproc \
+		zip \
+        gedit \
+		bash-completion \
+		command-not-found \
+	&& apt-get -y autoremove \
+	&& apt-get clean autoclean \
+	&& rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+
+COPY scripts/px4_dev.sh /tmp/px4_dev.sh
+COPY scripts/requirements.txt /tmp/requirements.txt
+
+#
+# Install PX4 dev requirements
+#
+RUN /tmp/px4_dev.sh
+
+# create user with id 1001 (jenkins docker workflow default)
+RUN useradd --shell /bin/bash -u 1000 -c "" -m user && usermod -a -G dialout user && echo "user:user" | chpasswd && adduser user sudo
+
+# RUN export "source /etc/bash_completion" >> /home/user/.bashrc
+
+
+# Some QT-Apps/Gazebo don't not show controls without this
+ENV QT_X11_NO_MITSHM 1
+
+# Use UTF8 encoding in java tools (needed to compile jMAVSim)
+ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
+
+# Install JSBSim
+RUN wget https://github.com/JSBSim-Team/jsbsim/releases/download/v1.1.13/JSBSim-devel_1.1.13-986.jammy.amd64.deb
+RUN dpkg -i JSBSim-devel_1.1.13-986.jammy.amd64.deb
+
+#
+# Insatll VS Code for easy code development
+#
+RUN wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg && \
+	install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg && \
+	sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list' && \
+	rm -f packages.microsoft.gpg
+RUN apt install -y apt-transport-https && \
+	apt update && \
+	apt install -y code
+
+RUN echo "source /opt/ros/humble/setup.bash" >> /home/user/.bashrc
+
+#
+# Remove binary pkg ros-humble-ros-gz-bridge. Not compatible with ros 2 humble. Need to build form source
+#
+RUN apt remove -y ros-humble-ros-gz-bridge
+
+#
+# Build ros-humble-ros-gz-bridge from source
+#
+USER user
+WORKDIR /home/user
+RUN rosdep update
+RUN mkdir -p /home/user/ros2_ws/src/
+RUN cd /home/user/ros2_ws/src/ && git clone -b humble https://github.com/gazebosim/ros_gz.git
+
+USER root
+RUN apt-get install gz-sim7-cli libgz-transport12-dev libgz-math7-dev libgz-cmake3-dev libignition-cmake2-dev -y
+WORKDIR /home/user/ros2_ws
+ENV GZ_VERSION=garden
+RUN rosdep install -r --from-paths src -i -y --rosdistro humble
+
+WORKDIR /home/ros2/ros_ws
+RUN bash -c "source /opt/ros/humble/setup.bash && cd /home/user/ros2_ws && export MAKEFLAGS='-j 4' &&  colcon build"
+
+USER user
+RUN echo "source /home/user/ros2_ws/install/setup.bash" >> /home/user/.bashrc
+
+#
+# Install rqt_tf
+#
+USER root
+RUN apt update &&  apt install -y ros-humble-rqt-tf-* \
+	&& apt-get clean autoclean \
+	&& rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+
+
+#
+# MAVROS dependencies
+#
+RUN  apt update && \
+    apt install -y \
+        python3-vcstool \
+        python3-rosinstall-generator \
+        python3-osrf-pycommon \
+        geographiclib-tools \
+        libgeographic-dev \
+		libasio-dev \
+		libgoogle-glog-dev \
+		ros-humble-eigen-stl-containers \
+		ros-humble-diagnostic-updater \
+		ros-humble-geographic-msgs \
+		&& apt-get clean autoclean \
+	&& rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+RUN  geographiclib-get-geoids egm96-5 && \
+    geographiclib-get-gravity egm96 && \
+    geographiclib-get-magnetic emm2015
+RUN pip3 install future
+
+# create and start as LOCAL_USER_ID
+COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+# Copy middleware profiles
+RUN mkdir -p /usr/local/share/middleware_profiles
+COPY middleware_profiles/*profile.xml /usr/local/share/middleware_profiles/
+ENV RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+
+
+WORKDIR /home/user
+
+CMD ["/bin/bash"]

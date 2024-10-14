@@ -1,0 +1,44 @@
+/target/mavros/**:
+  ros__parameters:
+    plugin_denylist:
+      # common
+
+      # extras
+      - image_pub
+      - vibration
+      - distance_sensor
+      - rangefinder
+      - wheel_odometry
+      - mount_control
+      - log_transfer
+      - landing_target
+      - gps_rtk
+      - manual_control
+      - hil
+      - adsb
+      - optical_flow
+      - terrain
+      - ftp
+      - tdr_radio
+      - rallypoint
+      - obstacle
+      - cellular_status
+      - actuator_control
+      - fake_gps
+      - esc_telemetry
+      - mag_calibration
+      - px4flow
+      - esc_status
+      - gps_input
+      - debug_value
+      - geofence
+      - nav_controller_output
+      - wind
+      - play_tune
+      - camera
+      - guided_target
+      - mocap
+
+
+    # plugin_allowlist:
+    #   - 'sys_*'

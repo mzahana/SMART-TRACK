@@ -1,0 +1,15 @@
+/detection_node:
+  ros__parameters:    
+    debug: False
+    show_debug_images: False
+    publish_processed_images: True
+    reference_frame: interceptor/local_pose_ENU
+    area_bounds: [300, 10000]
+    circular_bounds: [0.4, 0.99]
+    convexity_bounds: [0.7, 1.0]
+    d_group_max: 30
+    min_group_size: 4
+    max_cam_depth: 10.0
+    depth_scale_factor: 1.0
+    depth_step: 2.0
+    output: screen

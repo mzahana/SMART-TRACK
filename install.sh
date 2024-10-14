@@ -44,9 +44,9 @@ fi
 # Clone the d2dtracker_sim if it doesn't exist
 if [ ! -d "$ROS2_SRC/smart_track" ]; then
     cd $ROS2_SRC
-    git clone $SIM_PKG_URL smart_track && cd $ROS2_SRC/smart_track && git pull origin smart_track_dev
+    git clone $SIM_PKG_URL smart_track 
 else
-    cd $ROS2_SRC/smart_track && git pull origin smart_track_dev
+    cd $ROS2_SRC/smart_track && git pull origin main
 fi
 
 # Clone and build PX4-Autopilot if it doesn't exist

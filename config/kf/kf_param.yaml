@@ -1,4 +1,4 @@
-/kf_tracker_node:
+/observer/kf_tracker_node:
   ros__parameters:
     # Rate of prediction step
     dt_pred: 0.01
@@ -30,7 +30,7 @@
     sigma_v: 1.0
 
     # Provide estimate w.r.t this frame
-    tracking_frame: 'interceptor/odom'
+    tracking_frame: 'observer/odom'
     # Topic name of the tag detections
     apriltags_topic: '/tag_detections'
     # Frame name of the detected target

@@ -1,5 +1,19 @@
 #!/usr/bin/env python3
 
+"""
+@Description
+
+This node receives 
+    vision_msgs/msg/Detection2dArray msg
+    Depth image msg sensor_msgs/msg/Image
+and converts the 2D Yolo detection to a 3D position as
+    geometry_msgs/msg/PoseArray
+
+Author: Mohamed Abdelkader, Khaled Gabr
+Contact: mohamedashraf123@gmail.com
+
+"""
+
 import cv2
 import numpy as np
 import math
@@ -92,12 +106,160 @@ class Yolo2PoseNode(Node):
         # self.pose_kf_meas_pub_ = self.create_publisher(PoseArray, "kf_poses_mes", 10)
         self.overlay_ellipses_image_yolo_ = self.create_publisher(Image, "overlay_yolo_image", 10)
         # self.overlay_ellipses_image_kf_ = self.create_publisher(Image, "overlay_kf_image", 10)
+        # self.pose_publisher = self.create_publisher(Pose, 'transformed_pose', 10)
+        # self.timer = self.create_timer(0.1, self.publish_transformed_pose)
+        # self.mse_publisher = self.create_publisher(Float64, 'mse', 10)
+        # self.rmse_publisher = self.create_publisher(Float64, 'rmse', 10)
+        # self.abs_publisher = self.create_publisher(Float64, 'abs', 10)
 
+        # timer_period = 1  # seconds
+        # self.timer = self.create_timer(timer_period, self.calculate_errors)
 
         self.declare_parameter('yolo_measurement_only', True)
         self.declare_parameter('kf_feedback', True)
         self.declare_parameter('depth_roi', 5.0)
         self.declare_parameter('std_range', 5.0)
+
+
+    
+    # def collect_data(self, msg:KFTracks, actual_pose_values):
+    #     """
+    #     @brief Collects track and pose data from received messages for error calculation.
+        
+    #     @param msg (KFTracks): Message containing tracks data.
+    #     @param actual_pose_values (tuple): Tuple containing actual pose values.
+
+    #     This method iterates through the tracks in the received message, gathering track data and actual pose data.
+    #     Once the message count reaches the specified limit, it triggers error calculation.
+    #     """   
+    #     # Collect track data
+    #     for track in msg.tracks:
+    #         x = track.pose.pose.position.x
+    #         y = track.pose.pose.position.y
+    #         z = track.pose.pose.position.z
+
+    #         self.track_data.append((x, y, z)) 
+                
+    #         # self.get_logger().info(f'TrackData: {len(self.track_data)}')
+
+    #         # Collect pose data
+    #         # pose_tr = self.actual_pose()
+    #         pose_x, pose_y, pose_z = actual_pose_values
+
+    #         self.pose_data.append((pose_x, pose_y, pose_z))
+    #         # self.get_logger().info(f'PoseData: {len(self.pose_data)}')
+
+    #         # Increment message count
+    #         self.msg_count += 1
+    #         # print(f"Count: {self.msg_count}")
+
+    #         # Check if reached the limit
+    #         if self.msg_count >= self.msg_limit:
+    #             self.calculate_errors()
+    #             self.reset_data()
+
+    # def calculate_errors(self):
+    #     """
+    #     @brief Calculates error metrics based on collected pose and track data.
+        
+    #     @details Calculates Mean Squared Error (MSE), Root Mean Squared Error (RMSE),
+    #             and Average Absolute Error (AAE) between collected pose and track data.
+    #             If there's insufficient data for calculations, it indicates the same.
+
+    #     @return None
+    #     """
+    #     if len(self.pose_data) < self.msg_limit or len(self.track_data) < self.msg_limit:
+    #         # Insufficient data to calculate errors
+    #         print("Insufficient data for calculations")
+    #         return
+    
+    #     squared_error = 0.0
+    #     abs_error = 0.0
+    #     for i in range(self.msg_limit):
+    #         pose_x, pose_y, pose_z = self.pose_data[i]
+    #         x, y, z = self.track_data[i]
+    #         # clacutale Mean squared Error 
+    #         kf_err_x = ((pose_x - x) **2)
+    #         kf_err_y = ((pose_y - y) **2)
+    #         kf_err_z = ((pose_z - z) **2)
+    #         # print(f"kf_err_x: {kf_err_x}")
+
+    #         # clacutale Absolute Position Error
+    #         abs_err_x = abs(pose_x - x)
+    #         abs_err_y = abs(pose_y - y)
+    #         abs_err_z = abs(pose_z - z)
+
+    #         squared_error += kf_err_x + kf_err_y + kf_err_z
+    #         abs_error +=  abs_err_x + abs_err_y + abs_err_z
+    #     # Calculate Mean Squared Error
+    #     # num_data_points = self.msg_limit * 3  # Three dimensions (x, y, z) per data point
+    #     mse = squared_error / self.msg_limit
+    #     rmse = np.sqrt(mse)
+    #     avg_abs_error = abs_error
+
+    #     # Publish calculated errors
+    #     self.publish_mse(mse)
+    #     self.publish_rmse(rmse)
+    #     self.publish_abs(avg_abs_error)
+    #     # print(f"Total KF Error: {squared_error}")
+    #     # print(f"Mean Squared Error: {mse}")
+    #     # self.get_logger().info(f'Mean Squared Error: {mse}')
+    #     # self.get_logger().info(f'Root Mean Squared Error: {rmse}')
+    #     # self.get_logger().info(f'Absolute Position Error: {avg_abs_error}')
+    # def reset_data(self):
+    #     """
+    #     @brief Resets collected track and pose data along with the message count.
+
+    #     @details Clears the stored track and pose data lists and resets the message count to zero.
+        
+    #     @return None
+    #     """
+    #     # Clear data and reset message count
+    #     self.track_data = []
+    #     self.pose_data = []
+    #     self.msg_count = 0
+
+    # def publish_mse(self, mse):
+    #     """
+    #     @brief Publishes the Mean Squared Error (MSE) value.
+
+    #     @param mse (float): Mean Squared Error value to be published.
+
+    #     @details Publishes the calculated MSE value using a Float64 message.
+        
+    #     @return None
+    #     """
+    #     msg = Float64()
+    #     msg.data = mse
+    #     self.mse_publisher.publish(msg)
+
+    # def publish_rmse(self, rmse):
+    #     """
+    #     @brief Publishes the Root Mean Squared Error (RMSE) value.
+
+    #     @param rmse (float): Root Mean Squared Error value to be published.
+
+    #     @details Publishes the calculated RMSE value using a Float64 message.
+        
+    #     @return None
+    #     """
+    #     msg = Float64()
+    #     msg.data = rmse
+    #     self.rmse_publisher.publish(msg)
+
+    # def publish_abs(self, avg_abs_error):
+    #     """
+    #     @brief Publishes the Average Absolute Error (AAE) value.
+
+    #     @param avg_abs_error (float): Average Absolute Error value to be published.
+
+    #     @details Publishes the calculated AAE value using a Float64 message.
+        
+    #     @return None
+    #     """
+    #     msg = Float64()
+    #     msg.data = avg_abs_error
+    #     self.abs_publisher.publish(msg)
 
     def depthCallback(self, msg: Image):
         """
@@ -109,8 +271,8 @@ class Yolo2PoseNode(Node):
         It checks parameters to determine whether to use YOLO measurements exclusively or incorporate Kalman Filter feedback.
         Based on these conditions, it executes appropriate processing and publishes corresponding pose data.
         """
-        use_yolo = self.get_parameter('yolo_measurement_only').get_parameter_value().bool_value
-        use_kf = self.get_parameter('kf_feedback').get_parameter_value().bool_value
+        use_yolo = self.get_parameter('yolo_measurement_only').value
+        use_kf = self.get_parameter('kf_feedback').value
 
         kf_msg = copy.deepcopy(self.latest_kf_tracks_msg_)
         yolo_msg = copy.deepcopy(self.yolo_detections_msg_)
@@ -379,6 +541,66 @@ class Yolo2PoseNode(Node):
         # self.latest_covariances_2d_ = []
         # self.latest_depth_ranges_   = []  
         
+    # def publish_transformed_pose(self):
+    #     """
+    #     @brief Publishes the transformed pose by collecting actual pose data.
+
+    #     This method retrieves the actual pose values and, if available, creates a Pose message.
+    #     It then collects data using the latest Kalman Filter tracks and the obtained pose values.
+    #     If pose values are not available, it logs a warning. It handles potential lookup exceptions.
+    #     """
+    #     try:
+    #         pose_values = self.actual_pose()
+
+    #         if pose_values is not None:  # Check if pose_values is not None
+    #             pose_x, pose_y, pose_z = pose_values
+
+    #             # Create a Pose message with the obtained transform
+    #             pose_msg = Pose()
+    #             pose_msg.position.x = float(pose_x)
+    #             pose_msg.position.y = float(pose_y)
+    #             pose_msg.position.z = float(pose_z)
+    #             # pose_msg.orientation = pose_orientation
+    #             # actual_pose_values = self.actual_pose()
+    #             self.collect_data(self.latest_kf_tracks_msg_, pose_values) 
+    #             # Publish the transformed pose
+    #             self.pose_publisher.publish(pose_msg)
+    #         else:
+    #             self.get_logger().warn("Pose values are None.")
+
+    #     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+    #         self.get_logger().warn(f"Exception occurred: {e}")
+
+
+    # def actual_pose(self):
+    #     """
+    #     @brief Retrieves the actual pose from the transform between 'observer/odom' and 'target/base_link'.
+
+    #     @return tuple: Tuple containing the x, y, and z components of the actual pose.
+
+    #     This method looks up the transform between two frames and extracts the translation components
+    #     to derive the actual pose in terms of x, y, and z coordinates.
+    #     It handles potential lookup exceptions, returning a default value in case of failure.
+    #     """
+    #     try:
+    #         transform = self.tf_buffer_.lookup_transform('observer/odom', 'target/base_link', rclpy.time.Time())
+    #         translation = transform.transform.translation
+    #         rotation = transform.transform.rotation
+
+    #         # Extract pose values
+    #         pose_x = translation.x
+    #         pose_y = translation.y
+    #         pose_z = translation.z
+    #         # pose_orientation = rotation
+
+    #         return pose_x, pose_y, pose_z 
+            
+    #     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+    #         self.get_logger().warn(f"Exception occurred: {e}")
+    #         return 0,0,0  # Return a default value in case of exception
+
+
+
 
     def caminfoCallback(self,msg: CameraInfo):
         """

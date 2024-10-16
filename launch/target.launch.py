@@ -17,13 +17,13 @@ def generate_launch_description():
     autostart_id = {'px4_autostart_id': '4021'}
     instance_id = {'instance_id': '2'}
     # For default world
-    # xpos = {'xpos': '4.0'}
-    # ypos = {'ypos': '0.0'}
-    # zpos = {'zpos': '0.1'}
+    xpos = {'xpos': '4.0'}
+    ypos = {'ypos': '0.0'}
+    zpos = {'zpos': '0.1'}
     # For ihunter_world
-    xpos = {'xpos': '200.0'}
-    ypos = {'ypos': '100.0'}
-    zpos = {'zpos': '7.0'}
+    # xpos = {'xpos': '200.0'}
+    # ypos = {'ypos': '100.0'}
+    # zpos = {'zpos': '7.0'}
     headless= {'headless' : '0'}
 
     # Namespace
@@ -128,6 +128,6 @@ def generate_launch_description():
     ld.add_action(map2pose_tf_node)
     ld.add_action(offboard_control_node)
     ld.add_action(mavros_launch)
-    ld.add_action(quadcopter_marker_launch)
+    # ld.add_action(quadcopter_marker_launch)
 
     return ld

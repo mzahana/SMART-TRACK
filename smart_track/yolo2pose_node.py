@@ -1,4 +1,19 @@
+
 #!/usr/bin/env python3
+
+"""
+@Description
+
+This node receives 
+    vision_msgs/msg/Detection2dArray msg
+    Depth image msg sensor_msgs/msg/Image
+and converts the 2D Yolo detection to a 3D position as
+    geometry_msgs/msg/PoseArray
+
+Author: Mohamed Abdelkader, Khaled Gabr
+Contact: mohamedashraf123@gmail.com
+
+"""
 
 import cv2
 import numpy as np
@@ -49,7 +64,6 @@ class Yolo2PoseNode(Node):
         self.latest_pixels_ = []
         self.latest_covariances_2d_ = []
         self.latest_depth_ranges_= []
-
         self.track_data = []
         self.pose_data = []
         self.msg_count = 0
@@ -73,8 +87,6 @@ class Yolo2PoseNode(Node):
         # Last detection time stamp in seconds
         self.last_detection_t_ = 0.0
         self.last_kf_measurments_t_ = 0.0
-        # self.depth_roi_ = 5
-        # self.depth_range_ = 5
         # Ref: https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Writing-A-Tf2-Listener-Py.html
         self.tf_buffer_ = Buffer()
         self.tf_listener_ = TransformListener(self.tf_buffer_,self)
@@ -93,11 +105,11 @@ class Yolo2PoseNode(Node):
         self.overlay_ellipses_image_yolo_ = self.create_publisher(Image, "overlay_yolo_image", 10)
         # self.overlay_ellipses_image_kf_ = self.create_publisher(Image, "overlay_kf_image", 10)
 
-
         self.declare_parameter('yolo_measurement_only', True)
         self.declare_parameter('kf_feedback', True)
         self.declare_parameter('depth_roi', 5.0)
         self.declare_parameter('std_range', 5.0)
+
 
     def depthCallback(self, msg: Image):
         """
@@ -109,8 +121,8 @@ class Yolo2PoseNode(Node):
         It checks parameters to determine whether to use YOLO measurements exclusively or incorporate Kalman Filter feedback.
         Based on these conditions, it executes appropriate processing and publishes corresponding pose data.
         """
-        use_yolo = self.get_parameter('yolo_measurement_only').get_parameter_value().bool_value
-        use_kf = self.get_parameter('kf_feedback').get_parameter_value().bool_value
+        use_yolo = self.get_parameter('yolo_measurement_only').value
+        use_kf = self.get_parameter('kf_feedback').value
 
         kf_msg = copy.deepcopy(self.latest_kf_tracks_msg_)
         yolo_msg = copy.deepcopy(self.yolo_detections_msg_)
@@ -144,9 +156,9 @@ class Yolo2PoseNode(Node):
         
         if use_yolo and new_measurements_yolo:
             yolo_poses = self.yolo_process_pose(copy.deepcopy(msg))
-            if yolo_poses and len(yolo_poses.poses) > 0:
+            if len(yolo_poses.poses) > 0:
                 self.poses_pub_.publish(yolo_poses)
-
+            self.last_good_yolo_pose_ = yolo_poses  
 
         else:
             if use_kf:
@@ -155,7 +167,12 @@ class Yolo2PoseNode(Node):
                     if len(kf_poses.poses) > 0:
 
                         self.poses_pub_.publish(kf_poses)
-    
+                else:
+                # Fallback to last known good YOLO pose if no new KF updates
+                    if hasattr(self, 'last_good_yolo_pose_'):
+                        self.get_logger().warn("Falling back to last good YOLO pose.")
+                        self.poses_pub_.publish(self.last_good_yolo_pose_)
+
     def yolo_process_pose(self, msg: Image):
         """
         @brief Processes YOLO detections in the provided depth image to extract object poses.
@@ -175,14 +192,14 @@ class Yolo2PoseNode(Node):
         if self.camera_info_ is None:
             if(self.debug_):
                 self.get_logger().warn("[Yolo2PoseNode::yolo_process_pose] camera_info is None. Return")
-            return PoseArray()
+            return
 
         try:
             # Convert ROS Image message to OpenCV image
             cv_image = self.cv_bridge_.imgmsg_to_cv2(msg , desired_encoding="32FC1")#"16UC1")
         except Exception as e:
             self.get_logger().error("[Yolo2PoseNode::yolo_process_pose] Image to CvImg conversion error {}".format(e))
-            return PoseArray()
+            return
         try:
             transform = self.tf_buffer_.lookup_transform(
                 self.reference_frame_,
@@ -192,10 +209,8 @@ class Yolo2PoseNode(Node):
         except TransformException as ex:
             self.get_logger().error(
                 f'[Yolo2PoseNode::depthCallback] Could not transform {self.reference_frame_} to {msg.header.frame_id}: {ex}')
-            return PoseArray()
+            return
 
-        #depth_image_type = cv_image.dtype
-        #print("Depth Image Type:", depth_image_type)
         obj = Detection()
         poses_msg = PoseArray()
         poses_msg.header = copy.deepcopy(yolo_msg.header)
@@ -247,139 +262,87 @@ class Yolo2PoseNode(Node):
 
 
     def kf_process_pose(self, msg: Image):
-        """
-        @brief Processes Kalman Filter (KF) tracks to derive object poses based on depth image data.
-
-        @param msg (Image): Depth image message for KF track processing.
-
-        This method processes Kalman Filter tracks derived from the depth image to compute object poses.
-        It retrieves KF tracks, parameters for depth regions of interest, and transforms from the reference frame.
-        Using the provided depth image and KF tracks, it extracts ellipses, filters depth data, and computes object centroids.
-        For each identified contour within the specified depth range, it computes centroid coordinates and corresponding depths.
-        The closest centroid with a valid depth within the expected range is used to generate a Pose message.
-        This message undergoes transformation, and if successful, it's added to the PoseArray for KF-detected objects.
-        Additionally, it overlays "KF" labels on the modified depth image with ellipses and publishes it.
-
-        @return poses_msg_kf (PoseArray): PoseArray containing the transformed poses of KF-detected objects.
-        """
         kf_msg = copy.deepcopy(self.latest_kf_tracks_msg_)
-        # depth_roi_ = self.get_parameter('depth_roi').value
         depth_roi_ = self.get_parameter('depth_roi').value
         nearest_depth_value = None
         min_distance = float('inf')
-        kf_transformed_pose_msg = Pose()
-        nearest_centroid_x = 0.0 
+        nearest_centroid_x = 0.0
         nearest_centroid_y = 0.0
+
         try:
             transform = self.tf_buffer_.lookup_transform(
                 self.reference_frame_,
                 msg.header.frame_id,
                 rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=1.0))
+                timeout=rclpy.duration.Duration(seconds=1.0)
+            )
         except TransformException as ex:
-            self.get_logger().error(
-                f'[Yolo2PoseNode::depthCallback] Could not transform {self.reference_frame_} to {msg.header.frame_id}: {ex}')
-            return
+            self.get_logger().error(f'[kf_process_pose] Could not transform {self.reference_frame_} to {msg.header.frame_id}: {ex}')
+            return PoseArray()
 
         poses_msg_kf = PoseArray()
         poses_msg_kf.header = copy.deepcopy(msg.header)
         poses_msg_kf.header.frame_id = self.reference_frame_
-        poses_msg_kf.poses.clear()
-        # depth_range = []
-        depth_image_cv = self.cv_bridge_.imgmsg_to_cv2(msg, desired_encoding='passthrough')    
-        image_height, image_width = depth_image_cv.shape[:2]   
+
+        depth_image_cv = self.cv_bridge_.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+        image_width = depth_image_cv.shape[1]
+        image_height = depth_image_cv.shape[0]
+
         self.latest_pixels_, self.latest_covariances_2d_, self.latest_depth_ranges_ = self.process_and_store_track_data(self.latest_kf_tracks_msg_)
-        # Iterate over the detected objects' mean pixels, covariance matrices, and depth ranges.
+
         for mean_pixel, covariance_matrix, depth_range in zip(self.latest_pixels_, self.latest_covariances_2d_, self.latest_depth_ranges_):
-            # Compute the eigenvalues and eigenvectors of the covariance matrix to determine the ellipse parameters.
-            eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix[:2, :2])
-            # Calculate the angle of rotation for the ellipse based on the eigenvectors.
-            rotation_angle = np.degrees(np.arctan2(eigenvectors[1, 0], eigenvectors[0, 0]))
-            # Define the axes lengths for the ellipse based on the eigenvalues.
-            axes_lengths = (int(depth_roi_ * np.sqrt(eigenvalues[0])), int(depth_roi_ * np.sqrt(eigenvalues[1])))
-            # Create a mask image where the pixels within the ellipse are white (255) and others are black (0).
-            mask_image = np.zeros(depth_image_cv.shape, dtype=np.uint8)
             x, y = mean_pixel
+
             if 0 <= x < image_width and 0 <= y < image_height:
+                # Calculate ellipse parameters based on the covariance matrix
+                eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix[:2, :2])
+                rotation_angle = np.degrees(np.arctan2(eigenvectors[1, 0], eigenvectors[0, 0]))
+                axes_lengths = (int(depth_roi_ * np.sqrt(eigenvalues[0])), int(depth_roi_ * np.sqrt(eigenvalues[1])))
 
-                cv2.ellipse(depth_image_cv, tuple(mean_pixel), axes_lengths, rotation_angle, 0, 360, (0, 255, 0), 1)
-            else:
-                print(f"Mean pixel {mean_pixel} is outside the image size.")
-            # Create a mask for depth values within the specified range.
-            # Apply the mask to the depth image to isolate the depth values within the range.
-            # masked_depth_image = cv2.bitwise_and(depth_image_cv, depth_image_cv, mask=depth_mask)
-            # Find contours in the depth mask which indicate the edges of objects.
-            # kernel = np.ones((5,5),np.uint8)
-            # erosion = cv2.erode(depth_image_cv,kernel,iterations = 1)     
-            depth_image_blurred = cv2.GaussianBlur(depth_image_cv, (5, 5), 0)
+                # Draw the ellipse on the depth image
+                cv2.ellipse(depth_image_cv, (x, y), axes_lengths, rotation_angle, 0, 360, (0, 255, 0), 2)
 
-            depth_mask = cv2.inRange(depth_image_blurred, depth_range[0], depth_range[1])
-       
-            kfcontours, _ = cv2.findContours(depth_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                # Perform depth-based filtering as before
+                depth_image_blurred = cv2.GaussianBlur(depth_image_cv, (5, 5), 0)
+                depth_mask = cv2.inRange(depth_image_blurred, depth_range[0], depth_range[1])
 
+                kfcontours, _ = cv2.findContours(depth_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-            for kfcontour in kfcontours:
-                # Calculate the moments of the contour, which are used to find the centroid.
-                contour_moments = cv2.moments(kfcontour)
-                if contour_moments["m00"] != 0:
-                    # Compute the centroid coordinates from the moments.
-                    centroid_x = int(contour_moments["m10"] / contour_moments["m00"])
-                    centroid_y = int(contour_moments["m01"] / contour_moments["m00"])
-                    # print("Centroid_X " , centroid_x, " Centroid_Y " , centroid_y)
-                    # Ensure the centroid coordinates are within the bounds of the image.
-                    if 0 <= centroid_x < depth_image_cv.shape[1] and 0 <= centroid_y < depth_image_cv.shape[0]:
-                        contour_depth_values = depth_image_cv[kfcontour[:, :, 1], kfcontour[:, :, 0]]
-                        valid_depth_indices = np.logical_and(depth_range[0] <= contour_depth_values, contour_depth_values <= depth_range[1])
-                        if np.all(valid_depth_indices):
-                            # All depth values satisfy the conditions within the specified range
-                            valid_contour_depth_values = contour_depth_values
-                       
+                for kfcontour in kfcontours:
+                    contour_moments = cv2.moments(kfcontour)
+                    if contour_moments["m00"] != 0:
+                        centroid_x = int(contour_moments["m10"] / contour_moments["m00"])
+                        centroid_y = int(contour_moments["m01"] / contour_moments["m00"])
+                        if 0 <= centroid_x < image_width and 0 <= centroid_y < image_height:
+                            contour_depth_values = depth_image_cv[kfcontour[:, :, 1], kfcontour[:, :, 0]]
+                            valid_depth_indices = np.logical_and(depth_range[0] <= contour_depth_values, contour_depth_values <= depth_range[1])
 
-                            # print("valid_contour_depth_values " , valid_contour_depth_values)
-                            if len(valid_contour_depth_values) > 0:
-                                average_depth = np.mean(valid_contour_depth_values)
+                            if np.all(valid_depth_indices):
+                                average_depth = np.mean(contour_depth_values)
                                 distance = np.sqrt((mean_pixel[0] - centroid_x) ** 2 + (mean_pixel[1] - centroid_y) ** 2)
-
-                                
-                                # print(" Average_depth " , average_depth)
-                                # Update nearest centroid and depth value if this is the closest one yet
                                 if distance < min_distance:
                                     min_distance = distance
                                     nearest_depth_value = average_depth
                                     nearest_centroid_x = centroid_x
                                     nearest_centroid_y = centroid_y
 
-        # print(" nearest_depth_value " , nearest_depth_value)
-        # Check if the depth value is within the expected range.
         if nearest_depth_value is not None and depth_range[0] <= nearest_depth_value <= depth_range[1]:
-            # If yes, convert the pixel coordinates and depth value to a 3D pose.
             pixel_pose = [nearest_centroid_x, nearest_centroid_y]
             kf_pose_msg = self.depthToPoseMsg(pixel_pose, nearest_depth_value)
-            # Transform the pose to a different coordinate frame if necessary.
             kf_transformed_pose_msg = self.transform_pose(kf_pose_msg, transform)
-
-            if(kf_transformed_pose_msg is not None):
+            if kf_transformed_pose_msg is not None:
                 poses_msg_kf.poses.append(kf_transformed_pose_msg)
         else:
-            # Log a warning if the depth value is out of the expected range.
-            self.get_logger().warn(
-                f"[Yolo2PoseNode::kf_process_pose] Depth value {nearest_depth_value} Small {depth_range[0]} Big {depth_range[1]} at centroid ({nearest_centroid_x}, {nearest_centroid_y}) is out of range."
-            )
-        # cv2.ellipse(depth_mask, tuple(mean_pixel), axes_lengths, rotation_angle, 0, 360, (0, 255, 0), 1)
+            self.get_logger().warn(f"Depth value {nearest_depth_value} at centroid ({nearest_centroid_x}, {nearest_centroid_y}) is out of range.")
         cv2.putText(depth_image_cv, "KF", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-        # Convert the modified depth image with ellipses to a ROS Image message
+        # Publish the modified depth image with ellipses
         ellipses_image_msg = self.cv_bridge_.cv2_to_imgmsg(depth_image_cv, encoding="passthrough")
-
-        # Publish the modified depth image with ellipses on a ROS2 topic
         self.overlay_ellipses_image_yolo_.publish(ellipses_image_msg)
 
-        return poses_msg_kf  
-        # self.latest_pixels_ = []
-        # self.latest_covariances_2d_ = []
-        # self.latest_depth_ranges_   = []  
-        
+        return poses_msg_kf
 
+    
     def caminfoCallback(self,msg: CameraInfo):
         """
         @brief Callback function for handling camera information.
@@ -392,10 +355,7 @@ class Yolo2PoseNode(Node):
         # TODO : fill self.camera_info_ field
         P = np.array(msg.p)
         K = np.array(msg.k)
-        # if len(P) == 12: # Sanity check
-        #     P = P.reshape((3,4))
-        #     self.camera_info_ = {'fx': P[0][0], 'fy': P[1][1], 'cx': P[0][2], 'cy': P[1][2]}
-
+ 
         if len(K) == 9: # Sanity check
             K = K.reshape((3,3))
             self.camera_info_ = {'fx': K[0][0], 'fy': K[1][1], 'cx': K[0][2], 'cy': K[1][2]}
@@ -502,7 +462,7 @@ class Yolo2PoseNode(Node):
                 self.latest_covariances_2d_.append(covariance_2d)
 
         
-        return self.latest_pixels_, self.latest_covariances_2d_, self.latest_depth_ranges_ 
+        return self.latest_pixels_, self.latest_covariances_2d_, self.latest_depth_ranges_
     
     def project_3d_to_2d(self, x_cam, y_cam, z_cam):
         """
@@ -638,5 +598,4 @@ def main(args=None):
     rclpy.shutdown()
 
 if __name__ == "__main__":
-    main()        
-
+    main()       

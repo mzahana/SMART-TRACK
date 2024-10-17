@@ -135,7 +135,7 @@ def generate_launch_description():
         ]),
         launch_arguments={
             'detections_topic': 'yolo_detections_poses',
-            'kf_ns' : ns,
+            'kf_ns' : '',
             'kf_yaml': kf_file_path
         }.items()
     )
@@ -151,9 +151,9 @@ def generate_launch_description():
         launch_arguments={
             'model': '/home/user/shared_volume/ros2_ws/src/smart_track/config/drone_detection_v3.pt',
             'threshold' : '0.5',
-            'input_image_topic' : 'image',
+            'input_image_topic' : 'observer/image',
             'device': 'cuda:0',
-            'namespace' : ns
+            'namespace' : ''
         }.items()
     )
 
@@ -166,12 +166,12 @@ def generate_launch_description():
             ])
         ]),
         launch_arguments={
-            'depth_topic': 'depth_image',
+            'depth_topic': 'observer/depth_image',
             'debug' : 'false',
-            'caminfo_topic' : 'camera_info',
+            'caminfo_topic' : 'observer/camera_info',
             'detections_poses_topic': 'yolo_detections_poses',
             'yolo_detections_topic': 'detections',
-            'detector_ns' : ns,
+            'detector_ns' : '',
             'reference_frame' : 'observer/odom'
         }.items()
     )
@@ -200,7 +200,7 @@ def generate_launch_description():
         executable='rviz2',
         output='screen',
         name='sim_rviz2',
-        arguments=['-d' + os.path.join(get_package_share_directory('smart_track'), 'sim.rviz')]
+        arguments=['-d' + os.path.join(get_package_share_directory('smart_track'), 'smart_track.rviz')]
     )
 
     ld.add_action(gz_launch)

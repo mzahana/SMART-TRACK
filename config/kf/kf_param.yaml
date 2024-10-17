@@ -1,4 +1,4 @@
-/observer/kf_tracker_node:
+/kf_tracker_node:
   ros__parameters:
     # Rate of prediction step
     dt_pred: 0.01

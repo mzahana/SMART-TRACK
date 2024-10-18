@@ -1,7 +1,7 @@
 /kf_tracker_node:
   ros__parameters:
     # Rate of prediction step
-    dt_pred: 0.01
+    dt_pred: 0.02
     print_debug_msg: False
 
     # Diagonal elements of the process covariance matrix Q, for constant acceleration model
@@ -16,7 +16,7 @@
 
     # Diagonal elements of the process covariance matrix Q, for constant velocity or acceleration models
     # Also used in initializing the upper left (position) part of the P matrix (process covariance) for a track
-    r_diag: [0.01, 0.01, 0.01]
+    r_diag: [0.05, 0.05, 0.05]
 
     # Standard deviation of the random acceleration variable.
     # Used in computing Q matrix
@@ -56,3 +56,4 @@
 
     # Maximum time (seconds) from last measurement before considering a track uncertain and removing it
     track_mesurement_timeout: 1.5
+    use_sim_time : true

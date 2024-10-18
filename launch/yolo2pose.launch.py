@@ -57,7 +57,9 @@ def generate_launch_description():
         namespace=namespace,
         output='screen',
         parameters=[{'debug': debug},
-                    {'reference_frame': reference_frame},],
+                    {'reference_frame': reference_frame},
+                    {'use_sim_time': True},],
+
         remappings=[('observer/depth_image', depth_topic),
                     ('observer/camera_info', caminfo_topic),
                     ('yolo_poses', detections_poses_topic),

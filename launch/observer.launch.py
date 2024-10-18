@@ -72,7 +72,9 @@ def generate_launch_description():
             'config_yaml': config_file_path,
             'base_link_frame': 'observer/base_link',
             'odom_frame': 'observer/odom',
-            'map_frame': 'map'
+            'map_frame': 'map',
+            'use_sim_time' : 'True'
+
         }.items()
     )
 
@@ -137,6 +139,7 @@ def generate_launch_description():
             'detections_topic': 'yolo_detections_poses',
             'kf_ns' : '',
             'kf_yaml': kf_file_path
+
         }.items()
     )
     
@@ -154,6 +157,7 @@ def generate_launch_description():
             'input_image_topic' : 'observer/image',
             'device': 'cuda:0',
             'namespace' : ''
+
         }.items()
     )
 
@@ -172,7 +176,8 @@ def generate_launch_description():
             'detections_poses_topic': 'yolo_detections_poses',
             'yolo_detections_topic': 'detections',
             'detector_ns' : '',
-            'reference_frame' : 'observer/odom'
+            'reference_frame' : 'observer/odom',
+            'use_sim_time' : 'True'
         }.items()
     )
 

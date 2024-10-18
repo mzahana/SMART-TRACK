@@ -9,14 +9,9 @@ This node receives:
 
 And converts the 2D YOLO detections to 3D positions as:
     - geometry_msgs/msg/PoseArray
-
-It synchronizes depth messages with detection messages, as well as synchronizes
-KFTracks messages with depth messages. A state machine using a timer decides
-whether to use YOLO detections or KF tracks based on the availability of new data.
-
+    
 Author: Mohamed Abdelkader, Khaled Gabr
 Contact: mohamedashraf123@gmail.com
-Modified by: OpenAI's Assistant
 """
 
 import rclpy

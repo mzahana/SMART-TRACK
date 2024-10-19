@@ -16,18 +16,24 @@
 
     # Diagonal elements of the process covariance matrix Q, for constant velocity or acceleration models
     # Also used in initializing the upper left (position) part of the P matrix (process covariance) for a track
-    r_diag: [0.05, 0.05, 0.05]
+    # This is a variance in m^2 (squre root of standard deviation in m)
+    r_diag: [0.01, 0.01, 0.01]
 
     # Standard deviation of the random acceleration variable.
     # Used in computing Q matrix
-    sigma_a: 500.0
+    # reasonable value, such as between 1.0 and 5.0 m/s², depending on the expected maximum acceleration of the objects you're tracking
+    sigma_a: 10.0
 
     # Standard deviation of position
+    # Adjust sigma_p_ and sigma_v_ based on how much you trust your initial position and velocity estimates.
+    # If you have high confidence in the initial positions but less in velocities, you might set sigma_p_ to a smaller value (e.g., 0.5) 
+    # and sigma_v_ to a larger value (e.g., 2.0).
+    
     # Used in computing initial P (state estimate covariance) matrix
-    sigma_p: 1.0
+    sigma_p: 0.5
     # Standard deviation of velocity
     # Used in computing initial P (state estimate covariance) matrix
-    sigma_v: 1.0
+    sigma_v: 2.0
 
     # Provide estimate w.r.t this frame
     tracking_frame: 'observer/odom'
@@ -46,7 +52,8 @@
     # Minimum number of measurements to confirm a track
     N_meas: 10
     # Measurement association log-likelihood threshold
-    l_threshold: -100.0
+    # A very low threshold like -100 may result in associating unlikely measurements with tracks.
+    l_threshold: -10.0
 
     # Maximum distance between  a state & measurement to consider them as a match (currently not used)
     dist_threshold: 5.0

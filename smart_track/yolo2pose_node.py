@@ -65,11 +65,12 @@ class Yolo2PoseNode(Node):
         self.tf_listener_ = TransformListener(self.tf_buffer_, self)
 
         # Initialize variables
-        self.latest_detections_msg_ = None
-        self.latest_kftracks_msg_ = None
-        self.latest_depth_msg_ = None
-        self.latest_detection_time_ = None
-        self.latest_kftracks_time_ = None
+        self.latest_detections_msg_ = DetectionArray()
+        self.latest_kftracks_msg_ = KFTracks()
+        self.latest_depth_synced_with_yolo_msg_ = Image()
+        self.latest_depth_synced_with_kf_msg_ = Image()
+        self.latest_detection_time_ = 0.0
+        self.latest_kftracks_time_ = 0.0
         self.last_detection_t_ = 0.0
         self.last_kf_measurements_t_ = 0.0
         self.new_measurements_yolo = False
@@ -82,11 +83,11 @@ class Yolo2PoseNode(Node):
 
         # Synchronizers
         self.detection_depth_sync = ApproximateTimeSynchronizer(
-            [self.detections_sub_, self.depth_sub_], queue_size=10, slop=0.1)
+            [self.detections_sub_, self.depth_sub_], queue_size=100, slop=0.1)
         self.detection_depth_sync.registerCallback(self.detection_depth_callback)
 
         self.kftracks_depth_sync = ApproximateTimeSynchronizer(
-            [self.kftracks_sub_, self.depth_sub_], queue_size=10, slop=0.1)
+            [self.kftracks_sub_, self.depth_sub_], queue_size=100, slop=0.1)
         self.kftracks_depth_sync.registerCallback(self.kftracks_depth_callback)
 
         # Camera info subscriber
@@ -94,7 +95,7 @@ class Yolo2PoseNode(Node):
             CameraInfo, 'observer/camera_info', self.caminfoCallback, 10)
 
         # Timer for state machine
-        self.timer_ = self.create_timer(0.1, self.timer_callback)  # Adjust interval as needed
+        self.timer_ = self.create_timer(0.05, self.timer_callback)  # Adjust interval as needed
 
         # Publishers
         self.poses_pub_ = self.create_publisher(PoseArray, 'yolo_poses', 10)
@@ -114,9 +115,9 @@ class Yolo2PoseNode(Node):
         """
         # Process synchronized depth and detection messages
         self.latest_detections_msg_ = detections_msg
-        self.latest_depth_msg_ = depth_msg
+        self.latest_depth_synced_with_yolo_msg_ = depth_msg
         self.latest_detection_time_ = self.get_clock().now()
-        self.update_detections(detections_msg)
+        # self.update_detections(detections_msg)
 
     def kftracks_depth_callback(self, kftracks_msg, depth_msg):
         """
@@ -124,33 +125,41 @@ class Yolo2PoseNode(Node):
         """
         # Process synchronized depth and KF tracks messages
         self.latest_kftracks_msg_ = kftracks_msg
-        self.latest_depth_msg_ = depth_msg
+        self.latest_depth_synced_with_kf_msg_ = depth_msg
         self.latest_kftracks_time_ = self.get_clock().now()
-        self.update_kf_tracks(kftracks_msg)
+        # self.update_kf_tracks(kftracks_msg)
 
-    def update_detections(self, detections_msg):
+    def is_new_detections(self):
         """
         Update function for detections.
         """
-        current_detection_t = float(detections_msg.header.stamp.sec) + \
-                              float(detections_msg.header.stamp.nanosec) / 1e9
+        current_detection_t = float(self.latest_detections_msg_.header.stamp.sec) + \
+                              float(self.latest_detections_msg_.header.stamp.nanosec) / 1e9
 
-        if len(detections_msg.detections) > 0:
+        if len(self.latest_detections_msg_.detections) > 0:
             if current_detection_t > self.last_detection_t_:
-                self.new_measurements_yolo = True
                 self.last_detection_t_ = current_detection_t
+                return True
+            else:
+                return False
+        else:
+            return False
 
-    def update_kf_tracks(self, kf_msg):
+    def is_new_kf_tracks(self):
         """
         Update function for KF tracks.
         """
-        current_kf_measurement_t = float(kf_msg.header.stamp.sec) + \
-                                   float(kf_msg.header.stamp.nanosec) / 1e9
+        current_kf_measurement_t = float(self.latest_kftracks_msg_.header.stamp.sec) + \
+                                   float(self.latest_kftracks_msg_.header.stamp.nanosec) / 1e9
 
-        if len(kf_msg.tracks) > 0:
-            if current_kf_measurement_t > self.last_kf_measurements_t_ and not self.new_measurements_yolo:
-                self.new_measurements_kf = True
+        if len(self.latest_kftracks_msg_.tracks) > 0:
+            if current_kf_measurement_t > self.last_kf_measurements_t_ :
                 self.last_kf_measurements_t_ = current_kf_measurement_t
+                return True
+            else:
+                return False
+        else:
+            False
 
     def timer_callback(self):
         """
@@ -159,20 +168,28 @@ class Yolo2PoseNode(Node):
         use_yolo = self.get_parameter('yolo_measurement_only').value
         use_kf = self.get_parameter('kf_feedback').value
 
-        if use_yolo and self.new_measurements_yolo:
-            yolo_poses = self.yolo_process_pose(self.latest_depth_msg_, self.latest_detections_msg_)
-            if yolo_poses and len(yolo_poses.poses) > 0:
-                self.poses_pub_.publish(yolo_poses)
+        if use_yolo :
+            if self.is_new_detections():
+                yolo_poses = self.yolo_process_pose(self.latest_depth_synced_with_yolo_msg_, self.latest_detections_msg_)
+                if yolo_poses and len(yolo_poses.poses) > 0:
+                    self.poses_pub_.publish(yolo_poses)
+                    return
+                else:
+                    self.get_logger().warn("[Yolo2PoseNode::timer_callback] Got a new Yolo measurment, but could not compute new poses!")
             # self.new_measurements_yolo = False  
 
-        elif use_kf and self.new_measurements_kf:
-            kf_poses = self.kf_process_pose(self.latest_depth_msg_, self.latest_kftracks_msg_)
-            if kf_poses and len(kf_poses.poses) > 0:
-                self.poses_pub_.publish(kf_poses)
+        elif use_kf:
+            if self.is_new_kf_tracks():
+                kf_poses = self.kf_process_pose(self.latest_depth_synced_with_kf_msg_, self.latest_kftracks_msg_)
+                if kf_poses and len(kf_poses.poses) > 0:
+                    self.poses_pub_.publish(kf_poses)
+                    return
+                else:
+                    self.get_logger().warn("[Yolo2PoseNode::timer_callback] Got new KF tracks, but could not compute new poses!")
             # self.new_measurements_kf = False  
 
         else:
-            self.get_logger().warn("[Yolo2PoseNode::timer_callback] No Yolo or KF Poses")
+            self.get_logger().warn("[Yolo2PoseNode::timer_callback] use_yolo and use_kf are False")
     
     def caminfoCallback(self, msg: CameraInfo):
         """

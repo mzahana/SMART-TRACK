@@ -153,7 +153,7 @@ class Yolo2PoseNode(Node):
                                    float(self.latest_kftracks_msg_.header.stamp.nanosec) / 1e9
 
         if len(self.latest_kftracks_msg_.tracks) > 0:
-            if current_kf_measurement_t > self.last_kf_measurements_t_ :
+            if current_kf_measurement_t > self.last_kf_measurements_t_ and  current_kf_measurement_t > self.last_detection_t_:
                 self.last_kf_measurements_t_ = current_kf_measurement_t
                 return True
             else:
@@ -176,9 +176,10 @@ class Yolo2PoseNode(Node):
                     return
                 else:
                     self.get_logger().warn("[Yolo2PoseNode::timer_callback] Got a new Yolo measurment, but could not compute new poses!")
-            # self.new_measurements_yolo = False  
+            else:
+                self.get_logger().warn("[Yolo2PoseNode::timer_callback] No new YOLO detections!")
 
-        elif use_kf:
+        if use_kf:
             if self.is_new_kf_tracks():
                 kf_poses = self.kf_process_pose(self.latest_depth_synced_with_kf_msg_, self.latest_kftracks_msg_)
                 if kf_poses and len(kf_poses.poses) > 0:
@@ -186,9 +187,9 @@ class Yolo2PoseNode(Node):
                     return
                 else:
                     self.get_logger().warn("[Yolo2PoseNode::timer_callback] Got new KF tracks, but could not compute new poses!")
-            # self.new_measurements_kf = False  
+            self.get_logger().warn("[Yolo2PoseNode::timer_callback] No new KF Tracks!")
 
-        else:
+        if not use_yolo and not use_kf:
             self.get_logger().warn("[Yolo2PoseNode::timer_callback] use_yolo and use_kf are False")
     
     def caminfoCallback(self, msg: CameraInfo):

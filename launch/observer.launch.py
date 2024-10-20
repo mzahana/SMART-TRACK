@@ -92,7 +92,7 @@ def generate_launch_description():
 
     # Static TF base_link -> depth_camera
     # .15 0 .25 0 0 1.5707
-    cam_x = 0.15
+    cam_x = 0.17
     cam_y = 0.0
     cam_z = 0.25
     cam_roll = radians(-90.0)

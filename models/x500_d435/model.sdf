@@ -6,7 +6,7 @@
     </include>
     <include merge='true'>
       <uri>model://RealSense_D435</uri>
-      <pose>.15 0 .25 0 0 1.5707</pose>
+      <pose>.17 0 .25 0 0 1.5707</pose>
     </include>
     <joint name="CameraJoint" type="fixed">
       <parent>base_link</parent>

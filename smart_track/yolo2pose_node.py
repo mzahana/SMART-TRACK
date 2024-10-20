@@ -176,8 +176,8 @@ class Yolo2PoseNode(Node):
                     return
                 else:
                     self.get_logger().warn("[Yolo2PoseNode::timer_callback] Got a new Yolo measurment, but could not compute new poses!")
-            else:
-                self.get_logger().warn("[Yolo2PoseNode::timer_callback] No new YOLO detections!")
+            # else:
+            #     self.get_logger().warn("[Yolo2PoseNode::timer_callback] No new YOLO detections!")
 
         if use_kf:
             if self.is_new_kf_tracks():
@@ -187,7 +187,8 @@ class Yolo2PoseNode(Node):
                     return
                 else:
                     self.get_logger().warn("[Yolo2PoseNode::timer_callback] Got new KF tracks, but could not compute new poses!")
-            self.get_logger().warn("[Yolo2PoseNode::timer_callback] No new KF Tracks!")
+            # else:
+            #     self.get_logger().warn("[Yolo2PoseNode::timer_callback] No new KF Tracks!")
 
         if not use_yolo and not use_kf:
             self.get_logger().warn("[Yolo2PoseNode::timer_callback] use_yolo and use_kf are False")

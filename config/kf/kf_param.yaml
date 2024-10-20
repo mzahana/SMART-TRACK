@@ -22,7 +22,7 @@
     # Standard deviation of the random acceleration variable.
     # Used in computing Q matrix
     # reasonable value, such as between 1.0 and 5.0 m/s², depending on the expected maximum acceleration of the objects you're tracking
-    sigma_a: 10.0
+    sigma_a: 50.0
 
     # Standard deviation of position
     # Adjust sigma_p_ and sigma_v_ based on how much you trust your initial position and velocity estimates.
@@ -30,7 +30,7 @@
     # and sigma_v_ to a larger value (e.g., 2.0).
     
     # Used in computing initial P (state estimate covariance) matrix
-    sigma_p: 0.5
+    sigma_p: 1.0
     # Standard deviation of velocity
     # Used in computing initial P (state estimate covariance) matrix
     sigma_v: 2.0
@@ -53,7 +53,7 @@
     N_meas: 10
     # Measurement association log-likelihood threshold
     # A very low threshold like -100 may result in associating unlikely measurements with tracks.
-    l_threshold: -10.0
+    l_threshold: -100.0
 
     # Maximum distance between  a state & measurement to consider them as a match (currently not used)
     dist_threshold: 5.0

@@ -17,14 +17,14 @@
     # Diagonal elements of the process covariance matrix Q, for constant velocity or acceleration models
     # Also used in initializing the upper left (position) part of the P matrix (process covariance) for a track
     # This is a variance in m^2 (squre root of standard deviation in m)
-    r_diag: [0.001, 0.001, 0.001]
+    r_diag: [0.0004, 0.0004, 0.0004]
 
     # NOTE sigma_a, sigma_p, sigma_v are used in both constant acceleration and velocity KF models
     
     # Standard deviation of the random acceleration variable.
     # Used in computing Q matrix
     # reasonable value, such as between 1.0 and 10.0 m/s², depending on the expected maximum acceleration of the objects you're tracking
-    sigma_a: 5.0
+    sigma_a: 2.0
 
     # Standard deviation of position
     # Adjust sigma_p_ and sigma_v_ based on how much you trust your initial position and velocity estimates.
@@ -32,7 +32,7 @@
     # and sigma_v_ to a larger value (e.g., 2.0).
     
     # Used in computing initial P (state estimate covariance) matrix
-    sigma_p: 0.5
+    sigma_p: 1.0
     # Standard deviation of velocity
     # Used in computing initial P (state estimate covariance) matrix
     sigma_v: 1.0

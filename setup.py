@@ -31,6 +31,7 @@ setup(
             'yolo2pose_node = smart_track.yolo2pose_node:main',
             'drone_marker_node = smart_track.drone_marker_node:main',
             'offboard_control = smart_track.offboard_control_node:main',
+            'gt_target_tf = smart_track.gt_target_tf:main',
         ],
     },
 )

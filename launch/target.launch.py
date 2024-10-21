@@ -95,7 +95,7 @@ def generate_launch_description():
                     {'system_id': 3},
                     {'radius': 3.0},
                     {'omega': 0.5},
-                    {'normal_vector': [1.0, 1.0, 1.0]},
+                    {'normal_vector': [0.0, 0.0, 1.0]},
                     {'center': [10.0, 0.0, 10.0]},
         ],
         remappings=[

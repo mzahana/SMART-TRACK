@@ -11,7 +11,8 @@
     <joint name="CameraJoint" type="fixed">
       <parent>base_link</parent>
       <child>link</child>
-      <pose relative_to="base_link">.17 0 .25 0 0 1.5707</pose>
+      <!-- <pose relative_to="base_link">.17 0 .25 0 0 1.5707</pose> -->
+      <pose relative_to="base_link">0 0 0 0 0 0</pose>
     </joint>
 
     <!-- <plugin name='gz::sim::systems::Sensors' filename='gz-sim-sensors-system'>

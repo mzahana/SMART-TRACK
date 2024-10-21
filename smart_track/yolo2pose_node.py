@@ -222,11 +222,13 @@ class Yolo2PoseNode(Node):
             return None
 
         try:
+
             transform = self.tf_buffer_.lookup_transform(
                 self.reference_frame_,
                 depth_msg.header.frame_id,
-                rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=1.0))
+                rclpy.time.Time(seconds=0),  # Use time=0 to get the latest transform
+                timeout=rclpy.duration.Duration(seconds=1.0)  # You can still specify a timeout
+            )
         except TransformException as ex:
             self.get_logger().error(
                 f'[Yolo2PoseNode::yolo_process_pose] Could not transform {self.reference_frame_} to {depth_msg.header.frame_id}: {ex}')
@@ -248,6 +250,7 @@ class Yolo2PoseNode(Node):
             depth_image_roi = cv_image[y:y + h, x:x + w]
 
             if depth_image_roi.size == 0:
+                self.get_logger().warn("[Yolo2PoseNode::yolo_process_pose] The bounding box from Yolo has no pixels. Skipping")
                 continue
 
             _, depth_thresholded = cv2.threshold(depth_image_roi, self.depth_threshold, 255, cv2.THRESH_BINARY)
@@ -300,8 +303,8 @@ class Yolo2PoseNode(Node):
             transform = self.tf_buffer_.lookup_transform(
                 self.reference_frame_,
                 depth_msg.header.frame_id,
-                rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=1.0)
+                rclpy.time.Time(seconds=0),  # Use time=0 to get the latest transform
+                timeout=rclpy.duration.Duration(seconds=1.0)  # You can still specify a timeout
             )
         except TransformException as ex:
             self.get_logger().error(f'[kf_process_pose] Could not transform {self.reference_frame_} to {depth_msg.header.frame_id}: {ex}')
@@ -525,6 +528,11 @@ class Yolo2PoseNode(Node):
 
         try:
             transformed_pose = do_transform_pose(tf2_pose_msg, tr)
+
+            # Check nor NaN values
+            if np.isnan(transformed_pose.position.x) or np.isnan(transformed_pose.position.y) or np.isnan(transformed_pose.position.z):
+                self.get_logger().error("[transform_pose] Transformed pose contains NaN in the position values)")
+                return None
         except Exception as e:
             self.get_logger().error("[transform_pose] Error in transforming pose: {}".format(e))
             return None

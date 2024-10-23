@@ -167,6 +167,9 @@ RUN apt update && apt install ros-humble-vision-msgs -y \
 	&& rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 RUN pip3 install lapx>=0.5.2
 
+# Required for YOLO to run
+RUN pip install numpy==1.26.4
+
 #
 # MAVROS dependencies
 #

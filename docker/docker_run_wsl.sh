@@ -20,22 +20,24 @@ DOCKER_OPTS="-v /tmp/.X11-unix:/tmp/.X11-unix"
 DOCKER_OPTS="$DOCKER_OPTS -v /mnt/wslg:/mnt/wslg"
 DOCKER_OPTS="$DOCKER_OPTS -e DISPLAY=$DISPLAY"
 DOCKER_OPTS="$DOCKER_OPTS -e WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
-DOCKER_OPTS="$DOCKER_OPTS -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
-DOCKER_OPTS="$DOCKER_OPTS -e PULSE_SERVER=$PULSE_SERVER"
+# DOCKER_OPTS="$DOCKER_OPTS -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+# DOCKER_OPTS="$DOCKER_OPTS -e PULSE_SERVER=$PULSE_SERVER"
 # access to the vGPU
 DOCKER_OPTS="$DOCKER_OPTS  -v /usr/lib/wsl:/usr/lib/wsl"
 DOCKER_OPTS="$DOCKER_OPTS --device=/dev/dxg"
 DOCKER_OPTS="$DOCKER_OPTS -e LD_LIBRARY_PATH=/usr/lib/wsl/lib"
 # access to vGPU accelerated video
-# DOCKER_OPTS="$DOCKER_OPTS -e LIBVA_DRIVER_NAME=d3d12"
+DOCKER_OPTS="$DOCKER_OPTS -e LIBVA_DRIVER_NAME=d3d12"
 DOCKER_OPTS="$DOCKER_OPTS --device /dev/dri/card0"
-DOCKER_OPTS="$DOCKER_OPTS --device /dev/dri/renderD128"
+DOCKER_OPTS="$DOCKER_OPTS --device /dev/dri:/dev/dri"
+# DOCKER_OPTS="$DOCKER_OPTS --device /dev/dri/renderD128"
 # https://marinerobotics.gtorg.gatech.edu/running-ros-with-gui-in-docker-using-windows-subsystem-for-linux-2-wsl2/
 # DOCKER_OPTS="$DOCKER_OPTS -e DISPLAY=host.docker.internal:0.0"
 # DOCKER_OPTS="$DOCKER_OPTS -e LIBGL_ALWAYS_INDIRECT=0"
 DOCKER_OPTS="$DOCKER_OPTS -e MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA"
 # DOCKER_OPTS="$DOCKER_OPTS -p 14550:14550"
 DOCKER_OPTS="$DOCKER_OPTS --gpus all"
+DOCKER_OPTS="$DOCKER_OPTS -e NVIDIA_DRIVER_CAPABILITIES=all"
 echo "GPU arguments: $DOCKER_OPTS"
 
 SUDO_PASSWORD="user"
@@ -109,11 +111,9 @@ else
 
     docker run -it \
         --network host \
-        -e NVIDIA_DRIVER_CAPABILITIES=all \
         -e LOCAL_USER_ID="$(id -u)" \
         -e FASTRTPS_DEFAULT_PROFILES_FILE=/usr/local/share/middleware_profiles/rtps_udp_profile.xml \
         --volume="$WORKSPACE_DIR:/home/user/shared_volume:rw" \
-        --volume="/dev:/dev" \
         --name=${CONTAINER_NAME} \
         --privileged \
         --workdir /home/user/shared_volume \

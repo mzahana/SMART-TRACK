@@ -89,13 +89,17 @@ fi
 
 #
 # yolov8
+# WARNING !! This repo will be renamed afer Oct. 31st, 2024
+#       and will be compatible with different YOLO versions.
+#       So, it needs to be updated to the new name/link
+#       https://github.com/mgonzs13/yolo_ros.git
 #
 if [ ! -d "$ROS2_SRC/yolov8_ros" ]; then
     cd $ROS2_SRC
     git clone https://github.com/mgonzs13/yolov8_ros.git
-    cd $ROS2_SRC/yolov8_ros && git checkout 2.0.1
+    cd $ROS2_SRC/yolov8_ros && git checkout 3.4.0
 else
-    cd $ROS2_SRC/yolov8_ros && git pull origin && git checkout 2.0.1
+    cd $ROS2_SRC/yolov8_ros && git pull origin && git checkout 3.4.0
 fi
 
 #
